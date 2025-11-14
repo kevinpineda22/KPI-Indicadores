@@ -1,5 +1,6 @@
 import express from 'express';
 import actividadesRoutes from './actividades.js';
+import kpisRoutes from './kpis.js';
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.get('/status', (req, res) => {
 
 // Routes
 router.use('/actividades-direccion', actividadesRoutes);
+router.use('/kpis', kpisRoutes);
 
 export default router;
