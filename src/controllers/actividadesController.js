@@ -1,5 +1,5 @@
 import actividadesService from '../services/actividadesService.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import asyncHandler from '../utils/asyncHandler.js';
 import { supabaseAdmin } from '../config/database.js';
 
 const actividadesController = {
