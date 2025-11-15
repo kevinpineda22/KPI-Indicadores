@@ -1,3 +1,4 @@
+// routes/kpis.js
 import express from 'express';
 import kpiController from '../controllers/kpiController.js';
 
@@ -36,16 +37,32 @@ router.get('/', kpiController.obtenerTodosKpis);
  */
 router.get('/resumen', kpiController.obtenerResumenKpis);
 
+// ====================================
+// REPORTES Y KPIs POR ÁREA (rutas específicas primero)
+// ====================================
+
 /**
- * @route   GET /api/kpis/:id
- * @desc    Obtener un KPI específico por ID
+ * @route   GET /api/kpis/report/:area/:periodo
+ * @desc    Generar informe agregado por área y periodo (periodo: YYYY-MM)
+ * @access  Private
+ * @example /api/kpis/report/Inventarios/2025-10
+ */
+router.get('/report/:area/:periodo', kpiController.generarInformeAreaPeriodo);
+
+/**
+ * @route   GET /api/kpis/area/:area/ultimos
+ * @desc    Obtener el último valor de cada KPI por área
  * @access  Private
  */
-router.get('/:id', kpiController.obtenerKpiPorId);
+router.get('/area/:area/ultimos', kpiController.obtenerUltimosKpisPorArea);
 
-// ====================================
-// KPIs POR ÁREA
-// ====================================
+/**
+ * @route   GET /api/kpis/estadisticas/:area
+ * @desc    Obtener estadísticas de KPIs por área
+ * @access  Private
+ * @query   ?dias=30
+ */
+router.get('/estadisticas/:area', kpiController.obtenerEstadisticasArea);
 
 /**
  * @route   GET /api/kpis/area/:area
@@ -55,23 +72,6 @@ router.get('/:id', kpiController.obtenerKpiPorId);
  * @query   ?limit=50
  */
 router.get('/area/:area', kpiController.obtenerKpisPorArea);
-
-/**
- * @route   GET /api/kpis/area/:area/ultimos
- * @desc    Obtener el último valor de cada KPI por área
- * @access  Private
- * @params  area - Nombre del área
- */
-router.get('/area/:area/ultimos', kpiController.obtenerUltimosKpisPorArea);
-
-/**
- * @route   GET /api/kpis/estadisticas/:area
- * @desc    Obtener estadísticas de KPIs por área
- * @access  Private
- * @params  area - Nombre del área
- * @query   ?dias=30
- */
-router.get('/estadisticas/:area', kpiController.obtenerEstadisticasArea);
 
 // ====================================
 // HISTÓRICO Y TENDENCIAS
@@ -105,5 +105,13 @@ router.put('/:id/observaciones', kpiController.actualizarObservaciones);
  * @access  Private
  */
 router.delete('/:id', kpiController.eliminarKpi);
+
+/**
+ * @route   GET /api/kpis/:id
+ * @desc    Obtener un KPI específico por ID
+ * @access  Private
+ * (Debe quedar al final para no chocar con rutas específicas)
+ */
+router.get('/:id', kpiController.obtenerKpiPorId);
 
 export default router;

@@ -1,3 +1,4 @@
+// controllers/kpiController.js
 import kpiService from '../services/kpiService.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
@@ -5,313 +6,338 @@ import asyncHandler from '../utils/asyncHandler.js';
  * Controlador para gestión de KPIs
  */
 const kpiController = {
-    /**
-     * Registrar un nuevo valor de KPI
-     * POST /api/kpis
-     */
-    registrarKpi: asyncHandler(async (req, res) => {
-        const {
-            area,
-            indicador,
-            valor,
-            unidad,
-            cumple_meta,
-            meta,
-            datos_entrada,
-            direccion,
-            usuario,
-            observaciones
-        } = req.body;
+  /**
+   * Registrar un nuevo valor de KPI
+   * POST /api/kpis
+   */
+  registrarKpi: asyncHandler(async (req, res) => {
+    const {
+      area,
+      indicador,
+      valor,
+      unidad,
+      cumple_meta,
+      meta,
+      datos_entrada,
+      direccion,
+      usuario,
+      observaciones
+    } = req.body;
 
-        // Validaciones
-        if (!area || !indicador || valor === undefined || !datos_entrada) {
-            return res.status(400).json({
-                success: false,
-                message: 'Faltan campos requeridos',
-                errors: [
-                    { field: 'area', message: 'El área es requerida' },
-                    { field: 'indicador', message: 'El indicador es requerido' },
-                    { field: 'valor', message: 'El valor es requerido' },
-                    { field: 'datos_entrada', message: 'Los datos de entrada son requeridos' }
-                ].filter(err => !req.body[err.field] && req.body[err.field] !== 0)
-            });
-        }
+    // Validaciones mínimas
+    const missing = [];
+    if (!area) missing.push({ field: 'area', message: 'El área es requerida' });
+    if (!indicador) missing.push({ field: 'indicador', message: 'El indicador es requerido' });
+    if (valor === undefined || valor === null) missing.push({ field: 'valor', message: 'El valor es requerido' });
+    if (!datos_entrada || typeof datos_entrada !== 'object' || Array.isArray(datos_entrada)) missing.push({ field: 'datos_entrada', message: 'Los datos de entrada son requeridos y deben ser un objeto' });
 
-        // Validar que datos_entrada sea un objeto
-        if (typeof datos_entrada !== 'object' || Array.isArray(datos_entrada)) {
-            return res.status(400).json({
-                success: false,
-                message: 'datos_entrada debe ser un objeto JSON válido'
-            });
-        }
+    if (missing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos',
+        errors: missing
+      });
+    }
 
-        const kpiData = {
-            area: area.trim(),
-            indicador: indicador.trim(),
-            valor: parseFloat(valor),
-            unidad: unidad || '',
-            cumple_meta: cumple_meta !== undefined ? cumple_meta : null,
-            meta: meta !== undefined ? parseFloat(meta) : null,
-            datos_entrada,
-            direccion: direccion || null,
-            usuario: usuario || null,
-            observaciones: observaciones || null
-        };
+    const kpiData = {
+      area: area.trim(),
+      indicador: indicador.trim(),
+      valor: parseFloat(valor),
+      unidad: unidad || '',
+      cumple_meta: cumple_meta !== undefined ? (cumple_meta === true || cumple_meta === 'true') : null,
+      meta: meta !== undefined && meta !== null ? parseFloat(meta) : null,
+      datos_entrada,
+      direccion: direccion || null,
+      usuario: usuario || null,
+      observaciones: observaciones || null
+    };
 
-        const nuevoKpi = await kpiService.crearKpi(kpiData);
+    const nuevoKpi = await kpiService.crearKpi(kpiData);
 
-        res.status(201).json({
-            success: true,
-            message: 'KPI registrado exitosamente',
-            data: nuevoKpi
-        });
-    }),
+    res.status(201).json({
+      success: true,
+      message: 'KPI registrado exitosamente',
+      data: nuevoKpi
+    });
+  }),
 
-    /**
-     * Obtener todos los KPIs
-     * GET /api/kpis
-     */
-    obtenerTodosKpis: asyncHandler(async (req, res) => {
-        const { area, direccion, limit = 100, offset = 0 } = req.query;
+  /**
+   * Obtener todos los KPIs con filtros opcionales
+   * GET /api/kpis
+   */
+  obtenerTodosKpis: asyncHandler(async (req, res) => {
+    const { area, direccion, limit = 100, offset = 0 } = req.query;
 
-        const filtros = {
-            area: area || null,
-            direccion: direccion || null,
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        };
+    const filtros = {
+      area: area || null,
+      direccion: direccion || null,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10)
+    };
 
-        const kpis = await kpiService.obtenerKpis(filtros);
+    const kpis = await kpiService.obtenerKpis(filtros);
 
-        res.status(200).json({
-            success: true,
-            count: kpis.length,
-            data: kpis
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      count: Array.isArray(kpis) ? kpis.length : 0,
+      data: kpis
+    });
+  }),
 
-    /**
-     * Obtener KPIs por área
-     * GET /api/kpis/area/:area
-     */
-    obtenerKpisPorArea: asyncHandler(async (req, res) => {
-        const { area } = req.params;
-        const { limit = 50 } = req.query;
+  /**
+   * Obtener KPIs por área
+   * GET /api/kpis/area/:area
+   */
+  obtenerKpisPorArea: asyncHandler(async (req, res) => {
+    const { area } = req.params;
+    const { limit = 50 } = req.query;
 
-        if (!area) {
-            return res.status(400).json({
-                success: false,
-                message: 'El área es requerida'
-            });
-        }
+    if (!area) {
+      return res.status(400).json({
+        success: false,
+        message: 'El área es requerida'
+      });
+    }
 
-        const kpis = await kpiService.obtenerKpisPorArea(area, parseInt(limit));
+    const kpis = await kpiService.obtenerKpisPorArea(area, parseInt(limit, 10));
 
-        res.status(200).json({
-            success: true,
-            area,
-            count: kpis.length,
-            data: kpis
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      area,
+      count: Array.isArray(kpis) ? kpis.length : 0,
+      data: kpis
+    });
+  }),
 
-    /**
-     * Obtener el último valor de cada KPI por área
-     * GET /api/kpis/area/:area/ultimos
-     */
-    obtenerUltimosKpisPorArea: asyncHandler(async (req, res) => {
-        const { area } = req.params;
+  /**
+   * Obtener el último valor de cada KPI por área
+   * GET /api/kpis/area/:area/ultimos
+   */
+  obtenerUltimosKpisPorArea: asyncHandler(async (req, res) => {
+    const { area } = req.params;
 
-        if (!area) {
-            return res.status(400).json({
-                success: false,
-                message: 'El área es requerida'
-            });
-        }
+    if (!area) {
+      return res.status(400).json({
+        success: false,
+        message: 'El área es requerida'
+      });
+    }
 
-        const kpis = await kpiService.obtenerUltimosKpisPorArea(area);
+    const kpis = await kpiService.obtenerUltimosKpisPorArea(area);
 
-        res.status(200).json({
-            success: true,
-            area,
-            count: kpis.length,
-            data: kpis
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      area,
+      count: Array.isArray(kpis) ? kpis.length : 0,
+      data: kpis
+    });
+  }),
 
-    /**
-     * Obtener histórico de un KPI específico
-     * GET /api/kpis/historico/:area/:indicador
-     */
-    obtenerHistoricoKpi: asyncHandler(async (req, res) => {
-        const { area, indicador } = req.params;
-        const { dias = 30 } = req.query;
+  /**
+   * Obtener histórico de un KPI específico
+   * GET /api/kpis/historico/:area/:indicador
+   */
+  obtenerHistoricoKpi: asyncHandler(async (req, res) => {
+    const { area, indicador } = req.params;
+    const { dias = 30 } = req.query;
 
-        if (!area || !indicador) {
-            return res.status(400).json({
-                success: false,
-                message: 'El área y el indicador son requeridos'
-            });
-        }
+    if (!area || !indicador) {
+      return res.status(400).json({
+        success: false,
+        message: 'El área y el indicador son requeridos'
+      });
+    }
 
-        const historico = await kpiService.obtenerHistoricoKpi(
-            area,
-            indicador,
-            parseInt(dias)
-        );
+    const historico = await kpiService.obtenerHistoricoKpi(
+      area,
+      indicador,
+      parseInt(dias, 10)
+    );
 
-        res.status(200).json({
-            success: true,
-            area,
-            indicador,
-            dias: parseInt(dias),
-            count: historico.length,
-            data: historico
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      area,
+      indicador,
+      dias: parseInt(dias, 10),
+      count: Array.isArray(historico) ? historico.length : 0,
+      data: historico
+    });
+  }),
 
-    /**
-     * Obtener resumen de KPIs (últimos valores con estadísticas)
-     * GET /api/kpis/resumen
-     */
-    obtenerResumenKpis: asyncHandler(async (req, res) => {
-        const { area } = req.query;
+  /**
+   * Obtener resumen de KPIs (últimos valores con estadísticas)
+   * GET /api/kpis/resumen
+   */
+  obtenerResumenKpis: asyncHandler(async (req, res) => {
+    const { area } = req.query;
 
-        const resumen = await kpiService.obtenerResumenKpis(area || null);
+    const resumen = await kpiService.obtenerResumenKpis(area || null);
 
-        res.status(200).json({
-            success: true,
-            count: resumen.length,
-            data: resumen
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      count: Array.isArray(resumen) ? resumen.length : 0,
+      data: resumen
+    });
+  }),
 
-    /**
-     * Obtener un KPI por ID
-     * GET /api/kpis/:id
-     */
-    obtenerKpiPorId: asyncHandler(async (req, res) => {
-        const { id } = req.params;
+  /**
+   * Obtener un KPI por ID
+   * GET /api/kpis/:id
+   */
+  obtenerKpiPorId: asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
-        if (!id || isNaN(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'ID inválido'
-            });
-        }
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID inválido'
+      });
+    }
 
-        const kpi = await kpiService.obtenerKpiPorId(parseInt(id));
+    const kpi = await kpiService.obtenerKpiPorId(parseInt(id, 10));
 
-        if (!kpi) {
-            return res.status(404).json({
-                success: false,
-                message: 'KPI no encontrado'
-            });
-        }
+    if (!kpi) {
+      return res.status(404).json({
+        success: false,
+        message: 'KPI no encontrado'
+      });
+    }
 
-        res.status(200).json({
-            success: true,
-            data: kpi
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      data: kpi
+    });
+  }),
 
-    /**
-     * Actualizar observaciones de un KPI
-     * PUT /api/kpis/:id/observaciones
-     */
-    actualizarObservaciones: asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        const { observaciones } = req.body;
+  /**
+   * Actualizar observaciones de un KPI
+   * PUT /api/kpis/:id/observaciones
+   */
+  actualizarObservaciones: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { observaciones } = req.body;
 
-        if (!id || isNaN(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'ID inválido'
-            });
-        }
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID inválido'
+      });
+    }
 
-        if (observaciones === undefined) {
-            return res.status(400).json({
-                success: false,
-                message: 'Las observaciones son requeridas'
-            });
-        }
+    if (observaciones === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Las observaciones son requeridas'
+      });
+    }
 
-        const kpiActualizado = await kpiService.actualizarObservaciones(
-            parseInt(id),
-            observaciones
-        );
+    const kpiActualizado = await kpiService.actualizarObservaciones(
+      parseInt(id, 10),
+      observaciones
+    );
 
-        if (!kpiActualizado) {
-            return res.status(404).json({
-                success: false,
-                message: 'KPI no encontrado'
-            });
-        }
+    if (!kpiActualizado) {
+      return res.status(404).json({
+        success: false,
+        message: 'KPI no encontrado'
+      });
+    }
 
-        res.status(200).json({
-            success: true,
-            message: 'Observaciones actualizadas exitosamente',
-            data: kpiActualizado
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      message: 'Observaciones actualizadas exitosamente',
+      data: kpiActualizado
+    });
+  }),
 
-    /**
-     * Eliminar un KPI
-     * DELETE /api/kpis/:id
-     */
-    eliminarKpi: asyncHandler(async (req, res) => {
-        const { id } = req.params;
+  /**
+   * Eliminar un KPI
+   * DELETE /api/kpis/:id
+   */
+  eliminarKpi: asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
-        if (!id || isNaN(id)) {
-            return res.status(400).json({
-                success: false,
-                message: 'ID inválido'
-            });
-        }
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID inválido'
+      });
+    }
 
-        const eliminado = await kpiService.eliminarKpi(parseInt(id));
+    const eliminado = await kpiService.eliminarKpi(parseInt(id, 10));
 
-        if (!eliminado) {
-            return res.status(404).json({
-                success: false,
-                message: 'KPI no encontrado'
-            });
-        }
+    if (!eliminado) {
+      return res.status(404).json({
+        success: false,
+        message: 'KPI no encontrado'
+      });
+    }
 
-        res.status(200).json({
-            success: true,
-            message: 'KPI eliminado exitosamente'
-        });
-    }),
+    res.status(200).json({
+      success: true,
+      message: 'KPI eliminado exitosamente'
+    });
+  }),
 
-    /**
-     * Obtener estadísticas de KPIs por área
-     * GET /api/kpis/estadisticas/:area
-     */
-    obtenerEstadisticasArea: asyncHandler(async (req, res) => {
-        const { area } = req.params;
-        const { dias = 30 } = req.query;
+  /**
+   * Obtener estadísticas de KPIs por área
+   * GET /api/kpis/estadisticas/:area
+   */
+  obtenerEstadisticasArea: asyncHandler(async (req, res) => {
+    const { area } = req.params;
+    const { dias = 30 } = req.query;
 
-        if (!area) {
-            return res.status(400).json({
-                success: false,
-                message: 'El área es requerida'
-            });
-        }
+    if (!area) {
+      return res.status(400).json({
+        success: false,
+        message: 'El área es requerida'
+      });
+    }
 
-        const estadisticas = await kpiService.obtenerEstadisticasArea(
-            area,
-            parseInt(dias)
-        );
+    const estadisticas = await kpiService.obtenerEstadisticasArea(
+      area,
+      parseInt(dias, 10)
+    );
 
-        res.status(200).json({
-            success: true,
-            area,
-            dias: parseInt(dias),
-            data: estadisticas
-        });
-    })
+    res.status(200).json({
+      success: true,
+      area,
+      dias: parseInt(dias, 10),
+      data: estadisticas
+    });
+  }),
+
+  /**
+   * Generar informe agregado por área y periodo
+   * GET /api/kpis/report/:area/:periodo
+   * periodo: 'YYYY-MM'
+   */
+  generarInformeAreaPeriodo: asyncHandler(async (req, res) => {
+    const { area, periodo } = req.params;
+
+    if (!area || !periodo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Area y periodo son requeridos (formato YYYY-MM)'
+      });
+    }
+
+    // Validar formato YYYY-MM
+    const match = periodo.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+    if (!match) {
+      return res.status(400).json({
+        success: false,
+        message: 'Periodo inválido. Use formato YYYY-MM (ej. 2025-10)'
+      });
+    }
+
+    const agg = await kpiService.aggregateKpisForArea(area, periodo);
+
+    res.status(200).json({
+      success: true,
+      data: agg
+    });
+  })
 };
 
 export default kpiController;
