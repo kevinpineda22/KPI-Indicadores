@@ -21,7 +21,7 @@ const direcciones = [
 
 const areas = [
     { value: 'Inventario', label: 'Inventario' },
-    { value: 'Logistica', label: 'Logística' },
+    { value: 'Logística', label: 'Logística' },
     { value: 'Carnes', label: 'Carnes' },
     { value: 'Suministros', label: 'Suministros' },
     { value: 'Mantenimiento', label: 'Mantenimiento' },
@@ -37,7 +37,7 @@ const prioridades = [
 
 const informeAreas = [
     { value: 'Inventario', label: 'Inventario' },
-    { value: 'Logistica', label: 'Logística' },
+    { value: 'Logística', label: 'Logística' },
     { value: 'Carnes', label: 'Carnes' },
     { value: 'Suministros', label: 'Suministros' },
     { value: 'Mantenimiento', label: 'Mantenimiento' },
@@ -231,42 +231,6 @@ export const AdminDirecciones = () => {
                         ))}
                     </select>
                 )}
-                {activeTab === 'informe_sesion' && (
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16 }}>
-                        <select
-                            value={selectedArea}
-                            onChange={e => setSelectedArea(e.target.value)}
-                            className="selector-area"
-                        >
-                            {informeAreas.map(a => (
-                                <option key={a.value} value={a.value}>{a.label}</option>
-                            ))}
-                        </select>
-                        {/* Selector de mes */}
-                        <select
-                            value={selectedMonth}
-                            onChange={e => setSelectedMonth(Number(e.target.value))}
-                            className="selector-mes"
-                        >
-                            {[
-                                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                            ].map((mes, idx) => (
-                                <option key={mes} value={idx}>{mes}</option>
-                            ))}
-                        </select>
-                        {/* Selector de año */}
-                        <select
-                            value={selectedYear}
-                            onChange={e => setSelectedYear(Number(e.target.value))}
-                            className="selector-year"
-                        >
-                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
             </div>
 
             <div className="admin-tabs">
@@ -299,12 +263,7 @@ export const AdminDirecciones = () => {
                 {activeTab === 'proceso' && <Proceso />}
                 {activeTab === 'novedades' && renderPlaceholder('novedades')}
                 {activeTab === 'plan_estrategico' && renderPlaceholder('plan_estrategico')}
-                {activeTab === 'informe_sesion' && (
-                    <InformeSesion
-                        area={selectedArea || 'sistemas'}
-                        periodo={getPeriodo()}
-                    />
-                )}
+                {activeTab === 'informe_sesion' && <InformeSesion />}
                 {activeTab === 'cronograma' && renderPlaceholder('cronograma')}
                 {activeTab === 'datos' && renderPlaceholder('datos')}
             </div>

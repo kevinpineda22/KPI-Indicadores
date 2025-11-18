@@ -1,5 +1,6 @@
 // controllers/kpiController.js
 import kpiService from '../services/kpiService.js';
+import informeTemplateService from '../services/informeTemplateService.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 /**
@@ -270,7 +271,7 @@ const kpiController = {
   }),
 
   /**
-   * Generar informe agregado por área y periodo
+   * Generar informe agregado por área y periodo CON PLANTILLA PERSONALIZADA
    * GET /api/kpis/report/:area/:periodo
    * periodo: 'YYYY-MM'
    */
@@ -293,16 +294,38 @@ const kpiController = {
       });
     }
 
+    // Obtener datos agregados de KPIs
     const agg = await kpiService.aggregateKpisForArea(area, periodo);
+
+    // Obtener plantilla personalizada del área
+    const templateInfo = await informeTemplateService.getTemplate(area);
+
+    // Generar resumen ejecutivo personalizado
+    let resumenEjecutivo = '';
+    if (templateInfo.template) {
+      // Usar la estructura de la plantilla
+      resumenEjecutivo = `INFORME DE GESTIÓN MENSUAL – ${area.toUpperCase()}\n\n`;
+      resumenEjecutivo += `Periodo: ${periodo}\n`;
+      resumenEjecutivo += `Generado: ${new Date().toLocaleString('es-CO')}\n\n`;
+      resumenEjecutivo += `I. Resumen Ejecutivo:\n\n`;
+      resumenEjecutivo += agg.analisis && agg.analisis.length > 0 
+        ? agg.analisis.join('\n\n') 
+        : 'Sin datos suficientes para generar resumen ejecutivo.';
+    } else {
+      // Fallback genérico
+      resumenEjecutivo = agg.analisis && agg.analisis.length > 0 
+        ? agg.analisis.join('\n\n') 
+        : 'Sin datos suficientes para generar resumen ejecutivo.';
+    }
 
     // Transformar al formato esperado por el frontend
     const informe = {
       area: agg.area,
       periodo: agg.periodo,
       fecha_generado: new Date().toISOString(),
-      resumen_ejecutivo: agg.analisis && agg.analisis.length > 0 
-        ? agg.analisis.join('\n\n') 
-        : 'Sin datos suficientes para generar resumen ejecutivo.',
+      tiene_plantilla: !!templateInfo.template,
+      plantilla_secciones: templateInfo.secciones.map(s => s.titulo),
+      resumen_ejecutivo: resumenEjecutivo,
       indicadores: (agg.kpis || []).map(k => ({
         indicador: k.label || k.id,
         meta: k.meta,

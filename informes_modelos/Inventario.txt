@@ -1,0 +1,170 @@
+INFORME DE GESTIÓN MENSUAL – ÁREA DE INVENTARIOS. 
+
+ 
+
+Fecha de corte: ____________________________ 
+
+Responsable: Líder de Inventarios 
+
+I. Resumen Ejecutivo 
+
+- Breve descripción del comportamiento mensual de los inventarios. 
+- Principales logros, hallazgos, mejoras implementadas o desviaciones detectadas. 
+- Estado general de la exactitud del inventario: ✅ Conforme / ⚠️ Con observaciones / ❌ Crítico. 
+
+II. Indicadores Clave de Desempeño (KPIs) 
+
+Indicador 
+
+Meta 
+
+Resultado Mes 
+
+Resultado Acumulado 
+
+Estado 
+
+Exactitud de Inventario 
+
+≥ 98% 
+
+ 
+
+ 
+
+ 
+
+Valor del Ajuste Total 
+
+≤ -0.25% sobre ventas 
+
+ 
+
+ 
+
+ 
+
+Rotación de Inventario 
+
+Según categoría ABC 
+
+ 
+
+ 
+
+ 
+
+Cobertura en Días (Días Inv) 
+
+Máx. 30 días 
+
+ 
+
+ 
+
+ 
+
+Inventario Inactivo 
+
+≤ 5% del total 
+
+ 
+
+ 
+
+ 
+
+Costo Inventario 
+
+↓ vs mes anterior 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Auditorías realizadas 
+
+≥ 90% del plan 
+
+ 
+
+ 
+
+ 
+
+% de Ajustes con Soporte 
+
+100% 
+
+ 
+
+ 
+
+ 
+
+III. Análisis de Resultados 
+
+1. Exactitud y Ajustes: 
+- Comparativo de ajustes negativos por sede. 
+- Análisis de desviaciones: productos con mayor cantidad ajustada. 
+- Observaciones de auditorías e inventarios físicos. 
+- Ajustes por motivos. 
+
+2. Rotación y Cobertura (cuántos días de inventario hay disponibles para cada grupo de productos, con base en su consumo o rotación.) 
+- Productos con alta rotación vs productos sin movimiento. 
+- Cobertura por grupo de productos. 
+- Riesgos por sobrestock u obsolescencia. 
+
+3. Inventario Inactivo: 
+- Detalle por sede y grupo. 
+- Costo y cantidad de productos sin ventas >30 días o sin compras >100 días. 
+- Acciones correctivas o disposiciones tomadas. 
+
+4. Utilidad y Margen: 
+- Análisis de relación entre ventas, utilidad y costo de inventario. 
+- Grupos con mayor aporte o detrimento a la rentabilidad. 
+
+IV. Acciones Ejecutadas 
+
+Tabla de acciones con resultado e impacto: 
+
+V. Alertas y Recomendaciones 
+
+- Productos con riesgo de vencimiento. 
+- Grupos con cobertura superior a 45 días. 
+- Revisión urgente en sedes con mayor % de ajuste negativo. 
+
+VI. Plan de Acción Próximo Mes 
+
+Acción Propuesta 
+
+Responsable 
+
+Fecha Objetivo 
+
+Indicador asociado 
+
+VII. Conclusión 
+
+- Evaluación general de la gestión mensual. 
+- Comentarios de la dirección de operaciones si aplica. 
+
+ 
+
+ 
+
+INDICADORES DE GESTION  
+
+INVENTARIOS 

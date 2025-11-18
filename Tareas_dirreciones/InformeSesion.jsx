@@ -2,43 +2,32 @@
 import React, { useEffect, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import './InformeSesion.css';
 
 /**
- * Detección segura de BACKEND_BASE:
- * 1) window.__BACKEND_URL__  (inyección runtime desde index.html)
- * 2) process.env.REACT_APP_BACKEND_URL (CRA)
- * 3) import.meta.env.VITE_BACKEND_URL (Vite) -> se intenta con try/catch
- * 4) fallback: ''
+ * Detección segura de BACKEND_BASE para KPIs:
+ * 1) import.meta.env.VITE_BACKEND_KPI_URL (Vite) - variable específica para KPIs
+ * 2) fallback: URL de producción de Vercel
  */
 const resolveBackendBase = () => {
-  // 1) runtime injection from index.html
-  if (typeof window !== 'undefined' && window.__BACKEND_URL__) {
-    return window.__BACKEND_URL__;
-  }
-
-  // 2) Create React App env
-  if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_BACKEND_URL) {
-    return process.env.REACT_APP_BACKEND_URL;
-  }
-
-  // 3) Vite env (try/catch to avoid parser/runtime issues where import.meta is unsupported)
+  // Vite env - variable específica para backend de KPIs
   try {
     // eslint-disable-next-line no-undef
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
-      return import.meta.env.VITE_BACKEND_URL;
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_KPI_URL) {
+      return import.meta.env.VITE_BACKEND_KPI_URL;
     }
   } catch (e) {
     // ignore — import.meta not available in this environment
   }
 
-  // fallback
-  return '';
+  // fallback: usar backend de KPIs en producción de Vercel
+  return 'https://backend-kpi-indicadores.vercel.app';
 };
 
 const BACKEND_BASE = resolveBackendBase();
 
 const areaOptions = [
-  'Inventario','Logistica','Carnes','Suministros','Mantenimiento','Sistemas','Desarrollo'
+  'Inventario','Logística','Carnes','Suministros','Mantenimiento','Sistemas','Desarrollo'
 ];
 
 function monthLabelFromYYYYMM(yyyymm) {
@@ -84,10 +73,10 @@ const InformeSesion = () => {
   };
 
   useEffect(() => {
-    // cargar informe inicial automáticamente al montar
+    // Recargar informe automáticamente cuando cambia área o periodo
     fetchInforme();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [area, periodo]);
 
   const handleDownloadPDF = async () => {
     const element = informeRef.current;
@@ -111,56 +100,81 @@ const InformeSesion = () => {
   };
 
   return (
-    <div style={{ maxWidth: 980, margin: '24px auto', fontFamily: 'Segoe UI, Arial, sans-serif', color: '#210d65' }}>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-        <label>Área:</label>
-        <select value={area} onChange={e => setArea(e.target.value)}>
-          {areaOptions.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
+    <div className="informe-sesion-container">
+      <div className="informe-controls">
+        <div className="informe-selectors-group">
+          <div className="informe-selector-wrapper">
+            <label className="informe-label">Área:</label>
+            <select 
+              value={area} 
+              onChange={e => setArea(e.target.value)}
+              className="informe-select"
+            >
+              {areaOptions.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
 
-        <label>Periodo:</label>
-        <input type="month" value={periodo} onChange={e => setPeriodo(e.target.value)} />
+          <div className="informe-selector-wrapper">
+            <label className="informe-label">Periodo:</label>
+            <input 
+              type="month" 
+              value={periodo} 
+              onChange={e => setPeriodo(e.target.value)}
+              className="informe-input-month"
+            />
+          </div>
+        </div>
 
-        <button onClick={fetchInforme} disabled={loading} style={{ background: '#210d65', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}>
-          {loading ? 'Cargando...' : 'Generar informe'}
-        </button>
+        <div className="informe-actions">
+          <button 
+            onClick={fetchInforme} 
+            disabled={loading}
+            className="informe-btn informe-btn-generate"
+          >
+            {loading ? 'Cargando...' : 'Generar informe'}
+          </button>
 
-        <button onClick={handleDownloadPDF} disabled={!informe} style={{ background: '#4b5563', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}>
-          Descargar PDF
-        </button>
+          <button 
+            onClick={handleDownloadPDF} 
+            disabled={!informe}
+            className="informe-btn informe-btn-download"
+          >
+            Descargar PDF
+          </button>
+        </div>
       </div>
 
-      <div ref={informeRef} style={{ background: '#fff', padding: 20, borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.06)' }}>
+      <div ref={informeRef} className="informe-content">
         {!informe ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          <div className="informe-empty-state">
             <h3>No hay datos cargados</h3>
             <p>Haz clic en "Generar informe" para obtener los datos del mes seleccionado.</p>
           </div>
         ) : (
           <>
-            <header style={{ borderBottom: '1px solid #eee', paddingBottom: 12, marginBottom: 12 }}>
-              <h2 style={{ color: '#210d65' }}>Informe de Gestión Mensual — {area}</h2>
-              <div style={{ color: '#444' }}>
+            <header className="informe-header">
+              <h2 className="informe-title">Informe de Gestión Mensual — {area}</h2>
+              <div className="informe-meta">
                 <strong>Periodo:</strong> {monthLabelFromYYYYMM(informe.periodo)} &nbsp;|&nbsp;
                 <strong>Generado:</strong> {new Date(informe.fecha_generado).toLocaleString()}
               </div>
             </header>
 
-            <section>
-              <h3>I. Resumen Ejecutivo</h3>
-              <p style={{ whiteSpace: 'pre-line' }}>{informe.resumen_ejecutivo}</p>
+            <section className="informe-section">
+              <h3 className="informe-section-title">I. Resumen Ejecutivo</h3>
+              <p className="informe-resumen-text">{informe.resumen_ejecutivo}</p>
             </section>
 
-            <section style={{ marginTop: 12 }}>
-              <h3>II. Indicadores clave (resumen)</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <section className="informe-section">
+              <h3 className="informe-section-title">II. Indicadores clave (resumen)</h3>
+              <table className="informe-table">
                 <thead>
-                  <tr style={{ background: '#f3f3f3', textAlign: 'left' }}>
-                    <th style={{ padding: 8 }}>Indicador</th>
-                    <th style={{ padding: 8 }}>Meta</th>
-                    <th style={{ padding: 8 }}>Resultado Mes</th>
-                    <th style={{ padding: 8 }}>Resultado Acumulado</th>
-                    <th style={{ padding: 8 }}>Estado</th>
+                  <tr>
+                    <th>Indicador</th>
+                    <th>Meta</th>
+                    <th>Resultado Mes</th>
+                    <th>Resultado Acumulado</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,12 +183,12 @@ const InformeSesion = () => {
                       ? (k.porcentaje_cumplimiento >= 100 ? '✅ Conforme' : (k.porcentaje_cumplimiento >= 70 ? '⚠️ Parcial' : '❌ Crítico'))
                       : '—';
                     return (
-                      <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: 8 }}>{k.indicador}</td>
-                        <td style={{ padding: 8 }}>{k.meta ?? 'Variable'}</td>
-                        <td style={{ padding: 8 }}>{k.resultado_mes}{k.unidad ?? ''}</td>
-                        <td style={{ padding: 8 }}>{k.resultado_acumulado ?? '—'}</td>
-                        <td style={{ padding: 8 }}>{estado}</td>
+                      <tr key={i}>
+                        <td>{k.indicador}</td>
+                        <td>{k.meta ?? 'Variable'}</td>
+                        <td>{k.resultado_mes}{k.unidad ?? ''}</td>
+                        <td>{k.resultado_acumulado ?? '—'}</td>
+                        <td>{estado}</td>
                       </tr>
                     );
                   })}
@@ -182,9 +196,9 @@ const InformeSesion = () => {
               </table>
             </section>
 
-            <section style={{ marginTop: 12 }}>
-              <h3>III. Análisis y observaciones</h3>
-              <ul>
+            <section className="informe-section">
+              <h3 className="informe-section-title">III. Análisis y observaciones</h3>
+              <ul className="informe-list">
                 <li>Total registros recibidos en el período: <strong>{informe.total_registros}</strong></li>
                 <li>Total indicadores con datos: <strong>{informe.total_indicadores}</strong></li>
                 <li>Cumplimiento promedio (indicadores con meta): <strong>{informe.cumplimiento_promedio_indicadores ?? 'N/A'}%</strong></li>
@@ -192,9 +206,9 @@ const InformeSesion = () => {
             </section>
 
             {informe.proyectos && informe.proyectos.length > 0 && (
-              <section style={{ marginTop: 12 }}>
-                <h3>IV. Proyectos y estado</h3>
-                <ul>
+              <section className="informe-section">
+                <h3 className="informe-section-title">IV. Proyectos y estado</h3>
+                <ul className="informe-list">
                   {informe.proyectos.map(p => (
                     <li key={p.id || p.nombre}><strong>{p.nombre}</strong> — {p.estado || 'Sin estado'} {p.observaciones ? `: ${p.observaciones}` : ''}</li>
                   ))}
@@ -203,21 +217,21 @@ const InformeSesion = () => {
             )}
 
             {informe.plan_accion && informe.plan_accion.length > 0 && (
-              <section style={{ marginTop: 12 }}>
-                <h3>V. Plan de acción (próximo mes)</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <section className="informe-section">
+                <h3 className="informe-section-title">V. Plan de acción (próximo mes)</h3>
+                <table className="informe-table">
                   <thead>
-                    <tr style={{ background: '#f3f3f3' }}>
-                      <th style={{ padding: 8 }}>Acción</th><th style={{ padding: 8 }}>Responsable</th><th style={{ padding: 8 }}>Fecha objetivo</th><th style={{ padding: 8 }}>Estado</th>
+                    <tr>
+                      <th>Acción</th><th>Responsable</th><th>Fecha objetivo</th><th>Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {informe.plan_accion.map(a => (
                       <tr key={a.id}>
-                        <td style={{ padding: 8 }}>{a.accion}</td>
-                        <td style={{ padding: 8 }}>{a.responsable}</td>
-                        <td style={{ padding: 8 }}>{a.fecha_objetivo}</td>
-                        <td style={{ padding: 8 }}>{a.estado || 'Pendiente'}</td>
+                        <td>{a.accion}</td>
+                        <td>{a.responsable}</td>
+                        <td>{a.fecha_objetivo}</td>
+                        <td>{a.estado || 'Pendiente'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -225,7 +239,7 @@ const InformeSesion = () => {
               </section>
             )}
 
-            <footer style={{ marginTop: 16, borderTop: '1px dashed #eee', paddingTop: 12, color: '#666' }}>
+            <footer className="informe-footer">
               <div>Conclusión: revisión general y recomendaciones disponibles en el apartado de Plan de Acción.</div>
             </footer>
           </>
