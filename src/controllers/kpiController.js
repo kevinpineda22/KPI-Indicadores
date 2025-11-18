@@ -299,7 +299,9 @@ const kpiController = {
     const agg = await kpiService.aggregateKpisForArea(area, periodo);
 
     // Generar informe con plantilla personalizada (con o sin IA)
-    const usarIA = usar_ia === 'true';
+    const usarIA = usar_ia === 'true' && process.env.OPENAI_API_KEY; // Solo usar IA si hay API key Y está habilitado
+    console.log('🎛️ Usar IA:', usarIA);
+    
     const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg, usarIA);
 
     // Transformar al formato esperado por el frontend
