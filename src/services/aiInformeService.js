@@ -11,10 +11,16 @@ const aiInformeService = {
   async generarInformeConIA(area, periodo, plantilla, datosKpis) {
     try {
       // Verificar si hay API key configurada
+      console.log('🔑 Verificando API key de OpenAI...');
+      console.log('🔑 API key presente:', !!process.env.OPENAI_API_KEY);
+      console.log('🔑 API key length:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0);
+      
       if (!process.env.OPENAI_API_KEY) {
         console.log('⚠️ OPENAI_API_KEY no configurada, usando plantilla estándar');
         return null;
       }
+
+      console.log('✅ API key encontrada, inicializando OpenAI...');
 
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
@@ -57,6 +63,8 @@ INSTRUCCIONES:
 Genera el informe completo ahora:`;
 
       console.log('🤖 Generando informe con IA...');
+      console.log('📊 Área:', area, '| Periodo:', periodo);
+      console.log('📝 KPIs a analizar:', (datosKpis.kpis || []).length);
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Modelo económico y rápido
@@ -77,6 +85,9 @@ Genera el informe completo ahora:`;
       const informeGenerado = completion.choices[0].message.content;
       
       console.log('✅ Informe generado con IA exitosamente');
+      console.log('📊 Tokens usados:', completion.usage.total_tokens);
+      console.log('🤖 Modelo:', completion.model);
+      console.log('📄 Longitud del informe:', informeGenerado.length, 'caracteres');
 
       return {
         contenido: informeGenerado,
@@ -86,6 +97,8 @@ Genera el informe completo ahora:`;
 
     } catch (error) {
       console.error('❌ Error generando informe con IA:', error.message);
+      console.error('❌ Error completo:', error);
+      console.error('❌ Stack:', error.stack);
       return null;
     }
   },
