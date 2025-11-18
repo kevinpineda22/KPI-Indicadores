@@ -27,16 +27,22 @@ const informeTemplateService = {
       };
 
       const fileName = areaMap[area] || area;
-      const templatePath = path.join(__dirname, '..', '..', 'Tareas_dirreciones', 'informes_modelos', `${fileName}.txt`);
+      const templatePath = path.join(__dirname, '..', '..', 'informes_modelos', `${fileName}.txt`);
+
+      console.log('🔍 Buscando plantilla para área:', area);
+      console.log('📁 Ruta completa:', templatePath);
 
       const templateContent = await fs.readFile(templatePath, 'utf-8');
+      
+      console.log('✅ Plantilla cargada exitosamente, tamaño:', templateContent.length, 'caracteres');
+
       return {
         area,
         template: templateContent,
         secciones: this.parseSecciones(templateContent)
       };
     } catch (error) {
-      console.error(`Error al leer plantilla para ${area}:`, error);
+      console.error(`❌ Error al leer plantilla para ${area}:`, error.message);
       // Si no hay plantilla, devolver estructura genérica
       return {
         area,
@@ -133,12 +139,19 @@ const informeTemplateService = {
    * Genera el informe completo usando la plantilla y los datos
    */
   async generarInformeConPlantilla(area, periodo, datosKpis) {
+    console.log('📝 Generando informe con plantilla para:', area, 'Periodo:', periodo);
+    
     const templateInfo = await this.getTemplate(area);
     
+    console.log('🔧 Tiene plantilla:', !!templateInfo.template);
+    
     if (!templateInfo.template) {
+      console.log('⚠️ No hay plantilla, usando informe genérico');
       // Si no hay plantilla, devolver estructura genérica
       return this.generarInformeGenerico(area, periodo, datosKpis);
     }
+
+    console.log('✨ Aplicando plantilla personalizada');
 
     // Parsear el periodo para obtener mes y año legible
     const [year, month] = periodo.split('-');
