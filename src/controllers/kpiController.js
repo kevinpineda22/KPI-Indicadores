@@ -359,4 +359,3 @@ const kpiController = {
 };
 
 export default kpiController;
-
