@@ -162,7 +162,11 @@ const InformeSesion = () => {
 
             <section className="informe-section">
               <h3 className="informe-section-title">I. Resumen Ejecutivo</h3>
-              <p className="informe-resumen-text">{informe.resumen_ejecutivo}</p>
+              {informe.tiene_plantilla && informe.contenido_plantilla ? (
+                <pre className="informe-plantilla-contenido">{informe.contenido_plantilla}</pre>
+              ) : (
+                <p className="informe-resumen-text">{informe.resumen_ejecutivo}</p>
+              )}
             </section>
 
             <section className="informe-section">

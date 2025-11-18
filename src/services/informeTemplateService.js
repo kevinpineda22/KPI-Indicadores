@@ -130,6 +130,140 @@ const informeTemplateService = {
   },
 
   /**
+   * Genera el informe completo usando la plantilla y los datos
+   */
+  async generarInformeConPlantilla(area, periodo, datosKpis) {
+    const templateInfo = await this.getTemplate(area);
+    
+    if (!templateInfo.template) {
+      // Si no hay plantilla, devolver estructura genérica
+      return this.generarInformeGenerico(area, periodo, datosKpis);
+    }
+
+    // Parsear el periodo para obtener mes y año legible
+    const [year, month] = periodo.split('-');
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const periodoLegible = `${meses[parseInt(month) - 1]} de ${year}`;
+    const fechaCorte = new Date().toLocaleDateString('es-CO', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
+    // Construir el informe siguiendo la estructura de la plantilla
+    let informe = templateInfo.template;
+
+    // Reemplazar campos dinámicos
+    informe = informe.replace(/Fecha de corte: ____________________________/g, 
+                              `Fecha de corte: ${fechaCorte}`);
+    informe = informe.replace(/ÁREA DE .+/g, `ÁREA DE ${area.toUpperCase()}`);
+    
+    // Construir la tabla de KPIs
+    const tablaKpis = this.construirTablaKpis(datosKpis.kpis);
+    
+    // Insertar la tabla en la sección II
+    informe = this.insertarTablaKpis(informe, tablaKpis);
+
+    // Añadir análisis
+    if (datosKpis.analisis && datosKpis.analisis.length > 0) {
+      const analisisTexto = datosKpis.analisis.map(a => `• ${a}`).join('\n');
+      informe = this.insertarAnalisis(informe, analisisTexto);
+    }
+
+    // Añadir proyectos
+    if (datosKpis.proyectos && datosKpis.proyectos.length > 0) {
+      const proyectosTexto = this.construirTablaProyectos(datosKpis.proyectos);
+      informe = this.insertarProyectos(informe, proyectosTexto);
+    }
+
+    // Añadir plan de acción
+    if (datosKpis.plan_accion && datosKpis.plan_accion.length > 0) {
+      const planTexto = this.construirTablaPlanAccion(datosKpis.plan_accion);
+      informe = this.insertarPlanAccion(informe, planTexto);
+    }
+
+    return {
+      plantilla_aplicada: true,
+      contenido_completo: informe,
+      periodo: periodoLegible,
+      area: area
+    };
+  },
+
+  construirTablaKpis(kpis) {
+    if (!kpis || kpis.length === 0) {
+      return 'No hay indicadores registrados para este período.';
+    }
+
+    let tabla = '\n';
+    kpis.forEach(k => {
+      const estado = k.cumple_meta !== null 
+        ? (k.cumple_meta ? '✅ Conforme' : '❌ No cumple')
+        : '—';
+      
+      tabla += `${k.label || k.id}\n`;
+      tabla += `Meta: ${k.meta !== null ? k.meta + (k.unidad || '') : 'Variable'}\n`;
+      tabla += `Resultado Mes: ${k.valor_mes !== null ? k.valor_mes + (k.unidad || '') : '—'}\n`;
+      tabla += `Resultado Acumulado: ${k.valor_acumulado !== null ? k.valor_acumulado.toFixed(2) + (k.unidad || '') : '—'}\n`;
+      tabla += `Estado: ${estado}\n\n`;
+    });
+
+    return tabla;
+  },
+
+  construirTablaProyectos(proyectos) {
+    let tabla = '\n';
+    proyectos.forEach(p => {
+      tabla += `• ${p.nombre} - ${p.estado || 'Sin estado'}\n`;
+      if (p.observaciones) {
+        tabla += `  ${p.observaciones}\n`;
+      }
+      tabla += '\n';
+    });
+    return tabla;
+  },
+
+  construirTablaPlanAccion(acciones) {
+    let tabla = '\n';
+    acciones.forEach(a => {
+      tabla += `• ${a.accion}\n`;
+      tabla += `  Responsable: ${a.responsable || 'No asignado'}\n`;
+      tabla += `  Fecha objetivo: ${a.fecha_objetivo || 'No definida'}\n`;
+      tabla += `  Estado: ${a.estado || 'Pendiente'}\n\n`;
+    });
+    return tabla;
+  },
+
+  insertarTablaKpis(informe, tabla) {
+    // Buscar la sección II y añadir la tabla después
+    const regex = /(II\.\s*Indicadores Clave[^\n]*\n)/i;
+    return informe.replace(regex, `$1\n${tabla}\n`);
+  },
+
+  insertarAnalisis(informe, analisis) {
+    const regex = /(III\.\s*Análisis[^\n]*\n)/i;
+    return informe.replace(regex, `$1\n${analisis}\n\n`);
+  },
+
+  insertarProyectos(informe, proyectos) {
+    const regex = /(IV\.\s*Proyectos[^\n]*\n)/i;
+    return informe.replace(regex, `$1\n${proyectos}\n`);
+  },
+
+  insertarPlanAccion(informe, plan) {
+    const regex = /(VI\.\s*Plan de Acción[^\n]*\n)/i;
+    return informe.replace(regex, `$1\n${plan}\n`);
+  },
+
+  generarInformeGenerico(area, periodo, datosKpis) {
+    return {
+      plantilla_aplicada: false,
+      contenido_completo: datosKpis.analisis ? datosKpis.analisis.join('\n\n') : '',
+      periodo: periodo,
+      area: area
+    };
+  },
+
+  /**
    * Secciones por defecto si no hay plantilla
    */
   getDefaultSecciones() {

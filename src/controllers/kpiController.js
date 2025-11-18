@@ -297,35 +297,19 @@ const kpiController = {
     // Obtener datos agregados de KPIs
     const agg = await kpiService.aggregateKpisForArea(area, periodo);
 
-    // Obtener plantilla personalizada del área
-    const templateInfo = await informeTemplateService.getTemplate(area);
-
-    // Generar resumen ejecutivo personalizado
-    let resumenEjecutivo = '';
-    if (templateInfo.template) {
-      // Usar la estructura de la plantilla
-      resumenEjecutivo = `INFORME DE GESTIÓN MENSUAL – ${area.toUpperCase()}\n\n`;
-      resumenEjecutivo += `Periodo: ${periodo}\n`;
-      resumenEjecutivo += `Generado: ${new Date().toLocaleString('es-CO')}\n\n`;
-      resumenEjecutivo += `I. Resumen Ejecutivo:\n\n`;
-      resumenEjecutivo += agg.analisis && agg.analisis.length > 0 
-        ? agg.analisis.join('\n\n') 
-        : 'Sin datos suficientes para generar resumen ejecutivo.';
-    } else {
-      // Fallback genérico
-      resumenEjecutivo = agg.analisis && agg.analisis.length > 0 
-        ? agg.analisis.join('\n\n') 
-        : 'Sin datos suficientes para generar resumen ejecutivo.';
-    }
+    // Generar informe con plantilla personalizada
+    const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg);
 
     // Transformar al formato esperado por el frontend
     const informe = {
       area: agg.area,
       periodo: agg.periodo,
       fecha_generado: new Date().toISOString(),
-      tiene_plantilla: !!templateInfo.template,
-      plantilla_secciones: templateInfo.secciones.map(s => s.titulo),
-      resumen_ejecutivo: resumenEjecutivo,
+      tiene_plantilla: informeConPlantilla.plantilla_aplicada,
+      contenido_plantilla: informeConPlantilla.contenido_completo,
+      resumen_ejecutivo: informeConPlantilla.contenido_completo || (agg.analisis && agg.analisis.length > 0 
+        ? agg.analisis.join('\n\n') 
+        : 'Sin datos suficientes para generar resumen ejecutivo.'),
       indicadores: (agg.kpis || []).map(k => ({
         indicador: k.label || k.id,
         meta: k.meta,
