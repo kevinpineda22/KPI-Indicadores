@@ -279,6 +279,8 @@ const kpiController = {
     const { area, periodo } = req.params;
     const { usar_ia = 'true' } = req.query; // Parámetro opcional para activar/desactivar IA
 
+    console.log(`📊 Generando informe para área: ${area}, periodo: ${periodo}`);
+
     if (!area || !periodo) {
       return res.status(400).json({
         success: false,
@@ -295,47 +297,64 @@ const kpiController = {
       });
     }
 
-    // Obtener datos agregados de KPIs
-    const agg = await kpiService.aggregateKpisForArea(area, periodo);
+    try {
+      // Obtener datos agregados de KPIs
+      console.log('📈 Obteniendo datos de KPIs...');
+      const agg = await kpiService.aggregateKpisForArea(area, periodo);
+      console.log(`✅ Datos obtenidos: ${agg.kpis?.length || 0} KPIs encontrados`);
 
-    // Generar informe con plantilla personalizada (con o sin IA)
-    const usarIA = usar_ia === 'true' && process.env.OPENAI_API_KEY; // Solo usar IA si hay API key Y está habilitado
-    console.log('🎛️ Usar IA:', usarIA);
-    
-    const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg, usarIA);
+      // Generar informe con plantilla personalizada (con o sin IA)
+      const usarIA = usar_ia === 'true' && process.env.OPENAI_API_KEY; // Solo usar IA si hay API key Y está habilitado
+      console.log('🎛️ Usar IA:', usarIA);
+      
+      console.log('📝 Generando informe con plantilla...');
+      const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg, usarIA);
+      console.log(`✅ Informe generado, plantilla aplicada: ${informeConPlantilla.plantilla_aplicada}, con IA: ${informeConPlantilla.generado_con_ia}`);
 
-    // Transformar al formato esperado por el frontend
-    const informe = {
-      area: agg.area,
-      periodo: agg.periodo,
-      fecha_generado: new Date().toISOString(),
-      tiene_plantilla: informeConPlantilla.plantilla_aplicada,
-      generado_con_ia: informeConPlantilla.generado_con_ia || false,
-      contenido_plantilla: informeConPlantilla.contenido_completo,
-      resumen_ejecutivo: informeConPlantilla.contenido_completo || (agg.analisis && agg.analisis.length > 0 
-        ? agg.analisis.join('\n\n') 
-        : 'Sin datos suficientes para generar resumen ejecutivo.'),
-      indicadores: (agg.kpis || []).map(k => ({
-        indicador: k.label || k.id,
-        meta: k.meta,
-        resultado_mes: k.valor_mes,
-        resultado_acumulado: k.valor_acumulado,
-        unidad: k.unidad,
-        porcentaje_cumplimiento: k.cumple_meta !== null 
-          ? (k.cumple_meta ? 100 : 0) 
-          : null
-      })),
-      total_registros: agg.meta?.total_registros_mes || 0,
-      total_indicadores: agg.meta?.total_indicadores_mes || 0,
-      cumplimiento_promedio_indicadores: agg.meta?.porcentaje_cumplimiento || null,
-      proyectos: agg.proyectos || [],
-      plan_accion: agg.plan_accion || []
-    };
+      // Transformar al formato esperado por el frontend
+      const informe = {
+        area: agg.area,
+        periodo: agg.periodo,
+        fecha_generado: new Date().toISOString(),
+        tiene_plantilla: informeConPlantilla.plantilla_aplicada,
+        generado_con_ia: informeConPlantilla.generado_con_ia || false,
+        contenido_plantilla: informeConPlantilla.contenido_completo,
+        resumen_ejecutivo: informeConPlantilla.contenido_completo || (agg.analisis && agg.analisis.length > 0 
+          ? agg.analisis.join('\n\n') 
+          : 'Sin datos suficientes para generar resumen ejecutivo.'),
+        indicadores: (agg.kpis || []).map(k => ({
+          indicador: k.label || k.id,
+          meta: k.meta,
+          resultado_mes: k.valor_mes,
+          resultado_acumulado: k.valor_acumulado,
+          unidad: k.unidad,
+          porcentaje_cumplimiento: k.cumple_meta !== null 
+            ? (k.cumple_meta ? 100 : 0) 
+            : null
+        })),
+        total_registros: agg.meta?.total_registros_mes || 0,
+        total_indicadores: agg.meta?.total_indicadores_mes || 0,
+        cumplimiento_promedio_indicadores: agg.meta?.porcentaje_cumplimiento || null,
+        proyectos: agg.proyectos || [],
+        plan_accion: agg.plan_accion || []
+      };
 
-    res.status(200).json({
-      success: true,
-      data: informe
-    });
+      console.log('✅ Informe completo, enviando respuesta');
+      res.status(200).json({
+        success: true,
+        data: informe
+      });
+    } catch (error) {
+      console.error('❌ Error generando informe:', error);
+      console.error('Stack:', error.stack);
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Error al generar informe',
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
   })
 };
 
