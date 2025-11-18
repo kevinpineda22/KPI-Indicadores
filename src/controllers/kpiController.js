@@ -6,10 +6,6 @@ import asyncHandler from '../utils/asyncHandler.js';
  * Controlador para gestión de KPIs
  */
 const kpiController = {
-  /**
-   * Registrar un nuevo valor de KPI
-   * POST /api/kpis
-   */
   registrarKpi: asyncHandler(async (req, res) => {
     const {
       area,
@@ -29,7 +25,9 @@ const kpiController = {
     if (!area) missing.push({ field: 'area', message: 'El área es requerida' });
     if (!indicador) missing.push({ field: 'indicador', message: 'El indicador es requerido' });
     if (valor === undefined || valor === null) missing.push({ field: 'valor', message: 'El valor es requerido' });
-    if (!datos_entrada || typeof datos_entrada !== 'object' || Array.isArray(datos_entrada)) missing.push({ field: 'datos_entrada', message: 'Los datos de entrada son requeridos y deben ser un objeto' });
+    if (!datos_entrada || typeof datos_entrada !== 'object' || Array.isArray(datos_entrada)) {
+      missing.push({ field: 'datos_entrada', message: 'Los datos de entrada son requeridos y deben ser un objeto' });
+    }
 
     if (missing.length > 0) {
       return res.status(400).json({
@@ -40,12 +38,12 @@ const kpiController = {
     }
 
     const kpiData = {
-      area: area.trim(),
-      indicador: indicador.trim(),
+      area: String(area).trim(),
+      indicador: String(indicador).trim(),
       valor: parseFloat(valor),
       unidad: unidad || '',
-      cumple_meta: cumple_meta !== undefined ? (cumple_meta === true || cumple_meta === 'true') : null,
-      meta: meta !== undefined && meta !== null ? parseFloat(meta) : null,
+      cumple_meta: (cumple_meta === true || cumple_meta === 'true') ? true : (cumple_meta === false || cumple_meta === 'false' ? false : null),
+      meta: meta !== undefined && meta !== null && meta !== '' ? parseFloat(meta) : null,
       datos_entrada,
       direccion: direccion || null,
       usuario: usuario || null,
@@ -61,10 +59,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener todos los KPIs con filtros opcionales
-   * GET /api/kpis
-   */
   obtenerTodosKpis: asyncHandler(async (req, res) => {
     const { area, direccion, limit = 100, offset = 0 } = req.query;
 
@@ -84,10 +78,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener KPIs por área
-   * GET /api/kpis/area/:area
-   */
   obtenerKpisPorArea: asyncHandler(async (req, res) => {
     const { area } = req.params;
     const { limit = 50 } = req.query;
@@ -109,10 +99,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener el último valor de cada KPI por área
-   * GET /api/kpis/area/:area/ultimos
-   */
   obtenerUltimosKpisPorArea: asyncHandler(async (req, res) => {
     const { area } = req.params;
 
@@ -133,10 +119,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener histórico de un KPI específico
-   * GET /api/kpis/historico/:area/:indicador
-   */
   obtenerHistoricoKpi: asyncHandler(async (req, res) => {
     const { area, indicador } = req.params;
     const { dias = 30 } = req.query;
@@ -164,10 +146,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener resumen de KPIs (últimos valores con estadísticas)
-   * GET /api/kpis/resumen
-   */
   obtenerResumenKpis: asyncHandler(async (req, res) => {
     const { area } = req.query;
 
@@ -180,10 +158,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener un KPI por ID
-   * GET /api/kpis/:id
-   */
   obtenerKpiPorId: asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -209,10 +183,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Actualizar observaciones de un KPI
-   * PUT /api/kpis/:id/observaciones
-   */
   actualizarObservaciones: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { observaciones } = req.body;
@@ -250,10 +220,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Eliminar un KPI
-   * DELETE /api/kpis/:id
-   */
   eliminarKpi: asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -279,10 +245,6 @@ const kpiController = {
     });
   }),
 
-  /**
-   * Obtener estadísticas de KPIs por área
-   * GET /api/kpis/estadisticas/:area
-   */
   obtenerEstadisticasArea: asyncHandler(async (req, res) => {
     const { area } = req.params;
     const { dias = 30 } = req.query;
@@ -333,9 +295,34 @@ const kpiController = {
 
     const agg = await kpiService.aggregateKpisForArea(area, periodo);
 
+    // Transformar al formato esperado por el frontend
+    const informe = {
+      area: agg.area,
+      periodo: agg.periodo,
+      fecha_generado: new Date().toISOString(),
+      resumen_ejecutivo: agg.analisis && agg.analisis.length > 0 
+        ? agg.analisis.join('\n\n') 
+        : 'Sin datos suficientes para generar resumen ejecutivo.',
+      indicadores: (agg.kpis || []).map(k => ({
+        indicador: k.label || k.id,
+        meta: k.meta,
+        resultado_mes: k.valor_mes,
+        resultado_acumulado: k.valor_acumulado,
+        unidad: k.unidad,
+        porcentaje_cumplimiento: k.cumple_meta !== null 
+          ? (k.cumple_meta ? 100 : 0) 
+          : null
+      })),
+      total_registros: agg.meta?.total_registros_mes || 0,
+      total_indicadores: agg.meta?.total_indicadores_mes || 0,
+      cumplimiento_promedio_indicadores: agg.meta?.porcentaje_cumplimiento || null,
+      proyectos: agg.proyectos || [],
+      plan_accion: agg.plan_accion || []
+    };
+
     res.status(200).json({
       success: true,
-      data: agg
+      data: informe
     });
   })
 };
