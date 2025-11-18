@@ -277,6 +277,7 @@ const kpiController = {
    */
   generarInformeAreaPeriodo: asyncHandler(async (req, res) => {
     const { area, periodo } = req.params;
+    const { usar_ia = 'true' } = req.query; // Parámetro opcional para activar/desactivar IA
 
     if (!area || !periodo) {
       return res.status(400).json({
@@ -297,8 +298,9 @@ const kpiController = {
     // Obtener datos agregados de KPIs
     const agg = await kpiService.aggregateKpisForArea(area, periodo);
 
-    // Generar informe con plantilla personalizada
-    const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg);
+    // Generar informe con plantilla personalizada (con o sin IA)
+    const usarIA = usar_ia === 'true';
+    const informeConPlantilla = await informeTemplateService.generarInformeConPlantilla(area, periodo, agg, usarIA);
 
     // Transformar al formato esperado por el frontend
     const informe = {
@@ -306,6 +308,7 @@ const kpiController = {
       periodo: agg.periodo,
       fecha_generado: new Date().toISOString(),
       tiene_plantilla: informeConPlantilla.plantilla_aplicada,
+      generado_con_ia: informeConPlantilla.generado_con_ia || false,
       contenido_plantilla: informeConPlantilla.contenido_completo,
       resumen_ejecutivo: informeConPlantilla.contenido_completo || (agg.analisis && agg.analisis.length > 0 
         ? agg.analisis.join('\n\n') 

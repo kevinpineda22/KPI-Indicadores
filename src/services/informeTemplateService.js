@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import aiInformeService from './aiInformeService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -138,7 +139,7 @@ const informeTemplateService = {
   /**
    * Genera el informe completo usando la plantilla y los datos
    */
-  async generarInformeConPlantilla(area, periodo, datosKpis) {
+  async generarInformeConPlantilla(area, periodo, datosKpis, usarIA = true) {
     console.log('📝 Generando informe con plantilla para:', area, 'Periodo:', periodo);
     
     const templateInfo = await this.getTemplate(area);
@@ -147,11 +148,36 @@ const informeTemplateService = {
     
     if (!templateInfo.template) {
       console.log('⚠️ No hay plantilla, usando informe genérico');
-      // Si no hay plantilla, devolver estructura genérica
       return this.generarInformeGenerico(area, periodo, datosKpis);
     }
 
     console.log('✨ Aplicando plantilla personalizada');
+
+    // Intentar generar con IA si está habilitado
+    if (usarIA) {
+      const informeIA = await aiInformeService.generarInformeConIA(
+        area, 
+        periodo, 
+        templateInfo.template, 
+        datosKpis
+      );
+
+      if (informeIA) {
+        console.log('🤖 Usando informe generado por IA');
+        return {
+          plantilla_aplicada: true,
+          generado_con_ia: true,
+          contenido_completo: informeIA.contenido,
+          tokens_usados: informeIA.tokens_usados,
+          modelo_ia: informeIA.modelo,
+          periodo: periodo,
+          area: area
+        };
+      }
+    }
+
+    // Si no hay IA o falló, usar el método estándar
+    console.log('📋 Usando generación estándar de plantilla');
 
     // Parsear el periodo para obtener mes y año legible
     const [year, month] = periodo.split('-');
